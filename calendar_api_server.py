@@ -48,8 +48,21 @@ def month_events():
     
     event_list = []
     for event in events:
-        start = event['start'].get('dateTime', event['start'].get('date'))
-        event_list.append({"start": start, "summary": event['summary']})
+        # Get the event start and end time (dateTime or date)
+        start_str = event['start'].get('dateTime', event['start'].get('date'))
+        # Convert to PST if it's a dateTime, else leave as is (all-day event)
+        if 'dateTime' in event['start']:
+            # Parse the datetime string and convert to PST
+            start_dt = datetime.datetime.fromisoformat(start_str.replace('Z', '+00:00'))
+            start = start_dt.astimezone(pacific).isoformat()
+
+            end_dt = datetime.datetime.fromisoformat(event['end'].get('dateTime', event['end'].get('date')).replace('Z', '+00:00'))
+            end = end_dt.astimezone(pacific).isoformat()
+        else:
+            start = start_str  # all-day event, just the date
+            end = start_str # all-day event, same date for start and end
+
+        event_list.append({"start": start, "end": end, "summary": event['summary']})
 
     print(f"Found {len(event_list)} events.")
     return jsonify(event_list)
